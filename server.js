@@ -7,9 +7,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// TEST endpoint
+// ROOT TEST (çok önemli)
 app.get("/", (req, res) => {
   res.send("Backend çalışıyor 🚀");
+});
+
+// HEALTH CHECK (Railway için)
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
 });
 
 // Bunny video oluşturma
@@ -33,8 +38,13 @@ app.post("/create-video", async (req, res) => {
   }
 });
 
-// PORT (çok önemli)
-const PORT = process.env.PORT || 3000;
+// Fallback (kritik - Railway hatasını keser)
+app.use((req, res) => {
+  res.status(200).send("API çalışıyor");
+});
+
+// PORT (çok kritik)
+const PORT = process.env.PORT;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on port " + PORT);
