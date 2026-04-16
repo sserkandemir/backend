@@ -7,12 +7,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// TEST endpoint (çalışıyor mu diye kontrol)
+// TEST endpoint
 app.get("/", (req, res) => {
   res.send("Backend çalışıyor 🚀");
 });
 
-// Bunny upload endpoint (ileride kullanacağız)
+// Bunny video oluşturma
 app.post("/create-video", async (req, res) => {
   try {
     const response = await axios.post(
@@ -33,7 +33,7 @@ app.post("/create-video", async (req, res) => {
   }
 });
 
-// 🚨 EN KRİTİK KISIM (PORT)
+// PORT (çok önemli)
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
