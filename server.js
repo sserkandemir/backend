@@ -1,21 +1,23 @@
-import express from "express";
-import multer from "multer";
-import axios from "axios";
-import fs from "fs";
-import cors from "cors";
+const express = require("express");
+const cors = require("cors");
+const axios = require("axios");
 
 const app = express();
+
 app.use(cors());
+app.use(express.json());
 
-const upload = multer({ dest: "uploads/" });
+// TEST endpoint (çalışıyor mu diye kontrol)
+app.get("/", (req, res) => {
+  res.send("Backend çalışıyor 🚀");
+});
 
-app.post("/upload-video", upload.single("video"), async (req, res) => {
+// Bunny upload endpoint (ileride kullanacağız)
+app.post("/create-video", async (req, res) => {
   try {
-    const file = req.file;
-
     const response = await axios.post(
       https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos,
-      { title: "video" },
+      {},
       {
         headers: {
           AccessKey: process.env.BUNNY_API_KEY,
@@ -24,30 +26,16 @@ app.post("/upload-video", upload.single("video"), async (req, res) => {
       }
     );
 
-    const videoId = response.data.guid;
-
-    await axios.put(
-      https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId},
-      fs.createReadStream(file.path),
-      {
-        headers: {
-          AccessKey: process.env.BUNNY_API_KEY,
-          "Content-Type": "application/octet-stream",
-        },
-      }
-    );
-
-    fs.unlinkSync(file.path);
-
-    res.json({
-      videoId,
-      url: https://iframe.mediadelivery.net/play/${process.env.BUNNY_LIBRARY_ID}/${videoId},
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "upload failed" });
+    res.json(response.data);
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).json({ error: "Video oluşturulamadı" });
   }
 });
 
-app.listen(3000, () => console.log("Server running"));
+// 🚨 EN KRİTİK KISIM (PORT)
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
+});
