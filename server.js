@@ -16,7 +16,7 @@ app.get("/", (req, res) => {
 app.post("/create-video", async (req, res) => {
   try {
     const response = await axios.post(
-      https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos,
+      'https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos',
       {},
       {
         headers: {
