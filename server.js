@@ -7,18 +7,49 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ROOT TEST (çok önemli)
+/*
+====================================
+✅ TEST (tarayıcıdan kontrol)
+====================================
+*/
 app.get("/", (req, res) => {
   res.send("Backend çalışıyor 🚀");
 });
 
-// HEALTH CHECK (Railway için)
-app.get("/health", (req, res) => {
-  res.status(200).send("OK");
+/*
+====================================
+✅ BUNNY VIDEO CREATE (POST)
+====================================
+*/
+app.post("/create-video", async (req, res) => {
+  try {
+    const response = await axios.post(
+      https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos,
+      {},
+      {
+        headers: {
+          AccessKey: process.env.BUNNY_API_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    res.json(response.data);
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).json({
+      error: "Video oluşturulamadı",
+      detay: error.response?.data || error.message,
+    });
+  }
 });
 
-// Bunny video oluşturma
-app.post("/create-video", async (req, res) => {
+/*
+====================================
+✅ TARAYICIDAN TEST (EN ÖNEMLİ)
+====================================
+*/
+app.get("/test-video", async (req, res) => {
   try {
     const response = await axios.post(
       'https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos',
@@ -34,18 +65,20 @@ app.post("/create-video", async (req, res) => {
     res.json(response.data);
   } catch (error) {
     console.error(error.response?.data || error.message);
-    res.status(500).json({ error: "Video oluşturulamadı" });
+    res.status(500).json({
+      error: "Test video oluşturulamadı",
+      detay: error.response?.data || error.message,
+    });
   }
 });
 
-// Fallback (kritik - Railway hatasını keser)
-app.use((req, res) => {
-  res.status(200).send("API çalışıyor");
-});
+/*
+====================================
+✅ PORT (RAILWAY İÇİN KRİTİK)
+====================================
+*/
+const PORT = process.env.PORT || 3000;
 
-// PORT (çok kritik)
-const PORT = process.env.PORT;
-
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
