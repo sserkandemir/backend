@@ -32,7 +32,16 @@ app.post("/create-video", async (req, res) => {
       }
     );
 
-    res.json(response.data);
+    const videoId = response.data.guid;
+
+    const uploadUrl = `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId}`;
+
+    res.json({
+      videoId,
+      uploadUrl,
+      libraryId: process.env.BUNNY_LIBRARY_ID
+    });
+
   } catch (error) {
     console.log(error.response?.data || error.message);
 
@@ -44,7 +53,7 @@ app.post("/create-video", async (req, res) => {
 });
 
 /**
- * UPLOAD URL AL
+ * UPLOAD URL AL (opsiyonel)
  */
 app.post("/upload-video", (req, res) => {
   try {
@@ -57,9 +66,8 @@ app.post("/upload-video", (req, res) => {
     const uploadUrl = `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId}`;
 
     res.json({
-      uploadUrl: uploadUrl,
-      method: "PUT",
-      message: "Bu URL'e video dosyasını PUT ile gönder"
+      uploadUrl,
+      method: "PUT"
     });
 
   } catch (error) {
@@ -68,7 +76,7 @@ app.post("/upload-video", (req, res) => {
 });
 
 /**
- * TEST VIDEO (browserdan denemek için)
+ * TEST VIDEO
  */
 app.get("/test-video", async (req, res) => {
   try {
