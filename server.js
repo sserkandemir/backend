@@ -20,13 +20,13 @@ app.get("/", (req, res) => {
 app.post("/create-video", async (req, res) => {
   try {
     const response = await axios.post(
-      'https://video.bunnycdn.com/library/${process.env.638826}/videos',
+      'https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos',
       {
         title: "Test Video"
       },
       {
         headers: {
-          AccessKey: process.env.fabe024685e2443b9ce779457106194940fb,
+          AccessKey: process.env.BUNNY_API_KEY,
           "Content-Type": "application/json"
         }
       }
@@ -54,7 +54,7 @@ app.post("/upload-video", (req, res) => {
       return res.status(400).json({ error: "videoId gerekli" });
     }
 
-    const uploadUrl = 'https://video.bunnycdn.com/library/${process.env.638826}/videos/${videoId}';
+    const uploadUrl = 'https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId}';
 
     res.json({
       uploadUrl: uploadUrl,
@@ -73,13 +73,13 @@ app.post("/upload-video", (req, res) => {
 app.get("/test-video", async (req, res) => {
   try {
     const response = await axios.post(
-      'https://video.bunnycdn.com/library/${process.env.638826}/videos',
+      'https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos',
       {
         title: "Test Video Browser"
       },
       {
         headers: {
-          AccessKey: process.env.fabe024685e2443b9ce779457106194940fb,
+          AccessKey: process.env.BUNNY_API_KEY,
           "Content-Type": "application/json"
         }
       }
