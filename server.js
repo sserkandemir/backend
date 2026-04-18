@@ -26,7 +26,7 @@ app.post("/create-video", async (req, res) => {
       },
       {
         headers: {
-          AccessKey: process.env.fabe0246-85e2-443b-9ce779457106-1949-40fb,
+          AccessKey: process.env.fabe024685e2443b9ce779457106194940fb,
           "Content-Type": "application/json"
         }
       }
@@ -79,7 +79,7 @@ app.get("/test-video", async (req, res) => {
       },
       {
         headers: {
-          AccessKey: process.env.fabe0246-85e2-443b-9ce779457106-1949-40fb,
+          AccessKey: process.env.fabe024685e2443b9ce779457106194940fb,
           "Content-Type": "application/json"
         }
       }
