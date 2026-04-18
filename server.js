@@ -20,7 +20,7 @@ app.get("/", (req, res) => {
 app.post("/create-video", async (req, res) => {
   try {
     const response = await axios.post(
-      'https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos',
+      `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos`,
       {
         title: "Test Video"
       },
@@ -54,7 +54,7 @@ app.post("/upload-video", (req, res) => {
       return res.status(400).json({ error: "videoId gerekli" });
     }
 
-    const uploadUrl = 'https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId}';
+    const uploadUrl = `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId}`;
 
     res.json({
       uploadUrl: uploadUrl,
@@ -73,7 +73,7 @@ app.post("/upload-video", (req, res) => {
 app.get("/test-video", async (req, res) => {
   try {
     const response = await axios.post(
-      'https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos',
+      `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos`,
       {
         title: "Test Video Browser"
       },
