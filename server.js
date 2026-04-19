@@ -2,20 +2,21 @@ import express from "express";
 import cors from "cors";
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
-app.use(express.raw({ type: "*/*", limit: "500mb" }));
 
 const PORT = process.env.PORT || 3000;
 
 const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
 const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
 
+// test
 app.get("/", (req, res) => {
   res.send("Backend çalışıyor 🚀");
 });
 
-// CREATE VIDEO
+// 🎬 create video
 app.post("/create-video", async (req, res) => {
   try {
     const { title } = req.body;
@@ -40,39 +41,41 @@ app.post("/create-video", async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "create video hata" });
+    res.status(500).send("create video hata");
   }
 });
 
-// UPLOAD VIDEO
+// 📤 upload (STREAM — kritik)
 app.post("/upload-video", async (req, res) => {
   try {
     const { videoId, libraryId } = req.query;
 
-    const uploadUrl = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
-
-    const bunnyRes = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: {
-        AccessKey: BUNNY_API_KEY,
-        "Content-Type": "application/octet-stream",
-      },
-      body: req.body, // 🔥 BURASI ÇOK ÖNEMLİ
-    });
+    const bunnyRes = await fetch(
+      `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`,
+      {
+        method: "PUT",
+        headers: {
+          AccessKey: BUNNY_API_KEY,
+          "Content-Type": "application/octet-stream",
+        },
+        body: req,          // 🔥 STREAM
+        duplex: "half",     // 🔥 NODE 18+
+      }
+    );
 
     if (!bunnyRes.ok) {
       const text = await bunnyRes.text();
       console.log(text);
-      return res.status(500).send("Upload hata");
+      return res.status(500).send("upload hata");
     }
 
     res.send("OK");
   } catch (err) {
     console.error(err);
-    res.status(500).send("Server error");
+    res.status(500).send("server error");
   }
 });
 
 app.listen(PORT, () => {
-  console.log("Server çalışıyor:", PORT);
+  console.log("Server running:", PORT);
 });
