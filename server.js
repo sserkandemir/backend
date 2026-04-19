@@ -4,29 +4,18 @@ import cors from "cors";
 const app = express();
 
 app.use(cors());
-app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
-
-const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
-const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
-
-// test
-app.get("/", (req, res) => {
-  res.send("Backend çalışıyor 🚀");
-});
-
-// 🎬 create video
-app.post("/create-video", async (req, res) => {
+// ❗ SADECE create-video için json parser
+app.post("/create-video", express.json(), async (req, res) => {
   try {
     const { title } = req.body;
 
     const response = await fetch(
-      `https://video.bunnycdn.com/library/${LIBRARY_ID}/videos`,
+      `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos`,
       {
         method: "POST",
         headers: {
-          AccessKey: BUNNY_API_KEY,
+          AccessKey: process.env.BUNNY_API_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ title }),
@@ -37,7 +26,7 @@ app.post("/create-video", async (req, res) => {
 
     res.json({
       videoId: data.guid,
-      libraryId: LIBRARY_ID,
+      libraryId: process.env.BUNNY_LIBRARY_ID,
     });
   } catch (err) {
     console.error(err);
@@ -45,46 +34,38 @@ app.post("/create-video", async (req, res) => {
   }
 });
 
-// 📤 upload (STREAM — kritik)
+// 🚨 BURASI KRİTİK — BODY PARSER YOK
 app.post("/upload-video", async (req, res) => {
   try {
     const { videoId, libraryId } = req.query;
 
     const uploadUrl = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
 
-    const chunks = [];
-
-    req.on("data", (chunk) => {
-      chunks.push(chunk);
+    const bunnyRes = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        AccessKey: process.env.BUNNY_API_KEY,
+        "Content-Type": "application/octet-stream",
+      },
+      body: req,          // 🔥 STREAM DIRECT
+      duplex: "half",     // 🔥 ÇOK ÖNEMLİ
     });
 
-    req.on("end", async () => {
-      const buffer = Buffer.concat(chunks);
+    if (!bunnyRes.ok) {
+      const text = await bunnyRes.text();
+      console.log("BUNNY ERROR:", text);
+      return res.status(500).send("Upload hata");
+    }
 
-      const bunnyRes = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: {
-          AccessKey: BUNNY_API_KEY,
-          "Content-Type": "application/octet-stream",
-        },
-        body: buffer,
-      });
-
-      if (!bunnyRes.ok) {
-        const text = await bunnyRes.text();
-        console.log("BUNNY ERROR:", text);
-        return res.status(500).send("Upload hata");
-      }
-
-      res.send("OK");
-    });
-
+    res.send("OK");
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
   }
 });
 
-app.listen(PORT, () => {
-  console.log("Server running:", PORT);
+app.get("/", (req, res) => {
+  res.send("Backend çalışıyor 🚀");
 });
+
+app.listen(process.env.PORT || 3000);
