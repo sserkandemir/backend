@@ -1,5 +1,4 @@
 import express from "express";
-import fetch from "node-fetch";
 import cors from "cors";
 
 const app = express();
@@ -11,13 +10,11 @@ const PORT = process.env.PORT || 3000;
 const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
 const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
 
-// TEST
 app.get("/", (req, res) => {
   res.send("Backend çalışıyor 🚀");
 });
 
-
-// 🎯 CREATE VIDEO
+// CREATE VIDEO
 app.post("/create-video", async (req, res) => {
   try {
     const { title } = req.body;
@@ -46,15 +43,10 @@ app.post("/create-video", async (req, res) => {
   }
 });
 
-
-// 🎯 UPLOAD VIDEO (EN KRİTİK KISIM)
+// UPLOAD VIDEO
 app.post("/upload-video", async (req, res) => {
   try {
     const { videoId, libraryId } = req.query;
-
-    if (!videoId) {
-      return res.status(400).send("videoId yok");
-    }
 
     const uploadUrl = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
 
@@ -80,8 +72,6 @@ app.post("/upload-video", async (req, res) => {
   }
 });
 
-
-// 🚀 START
 app.listen(PORT, () => {
   console.log("Server çalışıyor:", PORT);
 });
