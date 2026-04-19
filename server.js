@@ -5,67 +5,106 @@ const app = express();
 
 app.use(cors());
 
-// ❗ SADECE create-video için json parser
+const PORT = process.env.PORT || 3000;
+const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
+const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
+
+
+// ✅ TEST
+app.get("/", (req, res) => {
+  res.send("Backend çalışıyor 🚀");
+});
+
+
+// 🎬 CREATE VIDEO
 app.post("/create-video", express.json(), async (req, res) => {
   try {
     const { title } = req.body;
 
     const response = await fetch(
-      `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos`,
+      `https://video.bunnycdn.com/library/${LIBRARY_ID}/videos`,
       {
         method: "POST",
         headers: {
-          AccessKey: process.env.BUNNY_API_KEY,
+          AccessKey: BUNNY_API_KEY,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({
+          title: title || "video",
+        }),
       }
     );
 
     const data = await response.json();
 
+    console.log("CREATE VIDEO RESPONSE:", data);
+
     res.json({
       videoId: data.guid,
-      libraryId: process.env.BUNNY_LIBRARY_ID,
+      libraryId: LIBRARY_ID,
     });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).send("create video hata");
+    console.error("CREATE ERROR:", err);
+    res.status(500).json({
+      error: err.message,
+    });
   }
 });
 
-// 🚨 BURASI KRİTİK — BODY PARSER YOK
+
+// 📤 UPLOAD VIDEO (EN KRİTİK KISIM)
 app.post("/upload-video", async (req, res) => {
   try {
     const { videoId, libraryId } = req.query;
 
-    const uploadUrl = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
+    if (!videoId || !libraryId) {
+      return res.status(400).json({
+        error: "videoId veya libraryId eksik",
+      });
+    }
 
-    const bunnyRes = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: {
-        AccessKey: process.env.BUNNY_API_KEY,
-        "Content-Type": "application/octet-stream",
-      },
-      body: req,          // 🔥 STREAM DIRECT
-      duplex: "half",     // 🔥 ÇOK ÖNEMLİ
-    });
+    console.log("UPLOAD START:", { videoId, libraryId });
+
+    const bunnyRes = await fetch(
+      `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`,
+      {
+        method: "PUT",
+        headers: {
+          AccessKey: BUNNY_API_KEY,
+          "Content-Type": "application/octet-stream",
+        },
+        body: req,          // 🔥 STREAM
+        duplex: "half",     // 🔥 NODE 18+
+      }
+    );
 
     if (!bunnyRes.ok) {
       const text = await bunnyRes.text();
-      console.log("BUNNY ERROR:", text);
-      return res.status(500).send("Upload hata");
+
+      console.log("🔥 BUNNY ERROR:", text);
+
+      return res.status(500).json({
+        error: text,
+      });
     }
 
-    res.send("OK");
+    console.log("UPLOAD SUCCESS");
+
+    res.json({
+      success: true,
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
+    console.error("UPLOAD SERVER ERROR:", err);
+
+    res.status(500).json({
+      error: err.message,
+    });
   }
 });
 
-app.get("/", (req, res) => {
-  res.send("Backend çalışıyor 🚀");
-});
 
-app.listen(process.env.PORT || 3000);
+app.listen(PORT, () => {
+  console.log("🚀 Server running on port", PORT);
+});
