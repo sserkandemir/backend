@@ -1,16 +1,15 @@
 
 const express = require("express");
 const cors = require("cors");
-const axios = require("axios");
 
 const app = express();
 
 /**
- * 🔥 ÖNEMLİ SIRALAMA
+ * 🔥 KRİTİK: raw body (video için)
  */
 app.use(cors());
 app.use(express.json());
-app.use(express.raw({ type: "application/octet-stream", limit: "500mb" }));
+app.use(express.raw({ type: "*/*", limit: "500mb" }));
 
 /**
  * TEST
@@ -24,36 +23,37 @@ app.get("/", (req, res) => {
  */
 app.post("/create-video", async (req, res) => {
   try {
-    const response = await axios.post(
+    const response = await fetch(
       `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos`,
       {
-        title: req.body.title || "Test Video"
-      },
-      {
+        method: "POST",
         headers: {
           AccessKey: process.env.BUNNY_API_KEY,
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: req.body.title || "Test Video",
+        }),
       }
     );
 
-    res.json({
-      videoId: response.data.guid,
-      libraryId: process.env.BUNNY_LIBRARY_ID
-    });
+    const data = await response.json();
 
+    res.json({
+      videoId: data.guid,
+      libraryId: process.env.BUNNY_LIBRARY_ID,
+    });
   } catch (error) {
-    console.log("CREATE ERROR:", error.response?.data || error.message);
+    console.log("CREATE ERROR:", error);
 
     res.status(500).json({
       error: "Video oluşturulamadı",
-      detail: error.response?.data || error.message
     });
   }
 });
 
 /**
- * 🔥 GERÇEK UPLOAD (EN KRİTİK)
+ * 🔥 VIDEO UPLOAD (EN ÖNEMLİ KISIM)
  */
 app.post("/upload-video", async (req, res) => {
   try {
@@ -61,7 +61,7 @@ app.post("/upload-video", async (req, res) => {
 
     if (!videoId || !libraryId) {
       return res.status(400).json({
-        error: "videoId & libraryId gerekli"
+        error: "videoId & libraryId gerekli",
       });
     }
 
@@ -69,28 +69,34 @@ app.post("/upload-video", async (req, res) => {
 
     console.log("UPLOAD START:", videoId);
 
-    await axios({
-      method: "put",
-      url: uploadUrl,
-      data: req,
+    const response = await fetch(uploadUrl, {
+      method: "PUT",
       headers: {
         AccessKey: process.env.BUNNY_API_KEY,
-        "Content-Type": "application/octet-stream"
+        "Content-Type": "application/octet-stream",
       },
-      maxContentLength: Infinity,
-      maxBodyLength: Infinity
+      body: req, // 🔥 stream direkt geçiyor
     });
+
+    const text = await response.text();
+
+    console.log("BUNNY RESPONSE:", text);
+
+    if (!response.ok) {
+      return res.status(500).json({
+        error: text,
+      });
+    }
 
     console.log("UPLOAD SUCCESS:", videoId);
 
     res.json({ success: true });
-
   } catch (error) {
-    console.log("UPLOAD ERROR:", error.response?.data || error.message);
+    console.log("UPLOAD ERROR:", error);
 
     res.status(500).json({
       error: "Upload failed",
-      detail: error.response?.data || error.message
+      detail: error.message,
     });
   }
 });
