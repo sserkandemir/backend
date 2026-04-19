@@ -5,8 +5,12 @@ const axios = require("axios");
 
 const app = express();
 
+/**
+ * 🔥 ÖNEMLİ SIRALAMA
+ */
 app.use(cors());
 app.use(express.json());
+app.use(express.raw({ type: "application/octet-stream", limit: "500mb" }));
 
 /**
  * TEST
@@ -22,58 +26,78 @@ app.post("/create-video", async (req, res) => {
   try {
     const response = await axios.post(
       `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos`,
-      { title: "Test Video" },
+      {
+        title: req.body.title || "Test Video"
+      },
       {
         headers: {
           AccessKey: process.env.BUNNY_API_KEY,
-          "Content-Type": "application/json",
-        },
+          "Content-Type": "application/json"
+        }
       }
     );
 
     res.json({
       videoId: response.data.guid,
-      libraryId: process.env.BUNNY_LIBRARY_ID,
+      libraryId: process.env.BUNNY_LIBRARY_ID
     });
-  } catch (err) {
-    console.log(err.response?.data || err.message);
-    res.status(500).json({ error: "create-video failed" });
+
+  } catch (error) {
+    console.log("CREATE ERROR:", error.response?.data || error.message);
+
+    res.status(500).json({
+      error: "Video oluşturulamadı",
+      detail: error.response?.data || error.message
+    });
   }
 });
 
 /**
- * 🔥 GERÇEK UPLOAD
+ * 🔥 GERÇEK UPLOAD (EN KRİTİK)
  */
 app.post("/upload-video", async (req, res) => {
   try {
     const { videoId, libraryId } = req.query;
 
     if (!videoId || !libraryId) {
-      return res.status(400).json({ error: "videoId & libraryId gerekli" });
+      return res.status(400).json({
+        error: "videoId & libraryId gerekli"
+      });
     }
 
     const uploadUrl = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
 
-    const response = await axios.put(uploadUrl, req, {
+    console.log("UPLOAD START:", videoId);
+
+    await axios({
+      method: "put",
+      url: uploadUrl,
+      data: req,
       headers: {
         AccessKey: process.env.BUNNY_API_KEY,
-        "Content-Type": "application/octet-stream",
+        "Content-Type": "application/octet-stream"
       },
       maxContentLength: Infinity,
-      maxBodyLength: Infinity,
+      maxBodyLength: Infinity
     });
 
+    console.log("UPLOAD SUCCESS:", videoId);
+
     res.json({ success: true });
-  } catch (err) {
-    console.log("UPLOAD ERROR:", err.response?.data || err.message);
+
+  } catch (error) {
+    console.log("UPLOAD ERROR:", error.response?.data || error.message);
 
     res.status(500).json({
-      error: "upload failed",
-      detail: err.response?.data || err.message,
+      error: "Upload failed",
+      detail: error.response?.data || error.message
     });
   }
 });
 
+/**
+ * PORT
+ */
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
