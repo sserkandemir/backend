@@ -1,3 +1,4 @@
+
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
@@ -21,14 +22,12 @@ app.post("/create-video", async (req, res) => {
   try {
     const response = await axios.post(
       `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos`,
-      {
-        title: "Test Video"
-      },
+      { title: "Test Video" },
       {
         headers: {
           AccessKey: process.env.BUNNY_API_KEY,
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
       }
     );
 
@@ -36,28 +35,30 @@ app.post("/create-video", async (req, res) => {
 
     res.json({
       videoId,
-      libraryId: process.env.BUNNY_LIBRARY_ID
+      libraryId: process.env.BUNNY_LIBRARY_ID,
     });
-
   } catch (error) {
     console.log(error.response?.data || error.message);
 
     res.status(500).json({
       error: "Video oluşturulamadı",
-      detail: error.response?.data || error.message
+      detail: error.response?.data || error.message,
     });
   }
 });
 
 /**
- * VIDEO UPLOAD (ASIL KRİTİK)
+ * VIDEO UPLOAD (DÜZELTİLMİŞ)
  */
 app.post("/upload-video", async (req, res) => {
-  const { libraryId, videoId } = req.query;
-
   try {
-    const chunks = [];
+    const { libraryId, videoId } = req.query;
 
+    if (!libraryId || !videoId) {
+      return res.status(400).json({ error: "libraryId ve videoId gerekli" });
+    }
+
+    const chunks = [];
     for await (const chunk of req) {
       chunks.push(chunk);
     }
@@ -84,49 +85,9 @@ app.post("/upload-video", async (req, res) => {
     }
 
     res.json({ success: true });
-
   } catch (err) {
     console.error(err);
     res.status(500).send("Upload error");
-  }
-});
-
-/**
- * PORT
- */
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
-});  }
-});
-
-/**
- * TEST VIDEO
- */
-app.get("/test-video", async (req, res) => {
-  try {
-    const response = await axios.post(
-      `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos`,
-      {
-        title: "Test Video Browser"
-      },
-      {
-        headers: {
-          AccessKey: process.env.BUNNY_API_KEY,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-
-    res.json(response.data);
-  } catch (error) {
-    console.log(error.response?.data || error.message);
-
-    res.status(500).json({
-      error: "Test video oluşturulamadı",
-      detail: error.response?.data || error.message
-    });
   }
 });
 
