@@ -31,69 +31,49 @@ app.post("/create-video", async (req, res) => {
       }
     );
 
-    const videoId = response.data.guid;
-
     res.json({
-      videoId,
+      videoId: response.data.guid,
       libraryId: process.env.BUNNY_LIBRARY_ID,
     });
-  } catch (error) {
-    console.log(error.response?.data || error.message);
-
-    res.status(500).json({
-      error: "Video oluşturulamadı",
-      detail: error.response?.data || error.message,
-    });
+  } catch (err) {
+    console.log(err.response?.data || err.message);
+    res.status(500).json({ error: "create-video failed" });
   }
 });
 
 /**
- * VIDEO UPLOAD (DÜZELTİLMİŞ)
+ * 🔥 GERÇEK UPLOAD
  */
 app.post("/upload-video", async (req, res) => {
   try {
-    const { libraryId, videoId } = req.query;
+    const { videoId, libraryId } = req.query;
 
-    if (!libraryId || !videoId) {
-      return res.status(400).json({ error: "libraryId ve videoId gerekli" });
+    if (!videoId || !libraryId) {
+      return res.status(400).json({ error: "videoId & libraryId gerekli" });
     }
 
-    const chunks = [];
-    for await (const chunk of req) {
-      chunks.push(chunk);
-    }
+    const uploadUrl = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
 
-    const buffer = Buffer.concat(chunks);
-
-    const response = await fetch(
-      `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`,
-      {
-        method: "PUT",
-        headers: {
-          AccessKey: process.env.BUNNY_API_KEY,
-          "Content-Type": "application/octet-stream",
-        },
-        body: buffer,
-      }
-    );
-
-    const text = await response.text();
-
-    if (!response.ok) {
-      console.log(text);
-      return res.status(500).send(text);
-    }
+    const response = await axios.put(uploadUrl, req, {
+      headers: {
+        AccessKey: process.env.BUNNY_API_KEY,
+        "Content-Type": "application/octet-stream",
+      },
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+    });
 
     res.json({ success: true });
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Upload error");
+    console.log("UPLOAD ERROR:", err.response?.data || err.message);
+
+    res.status(500).json({
+      error: "upload failed",
+      detail: err.response?.data || err.message,
+    });
   }
 });
 
-/**
- * PORT
- */
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
