@@ -50,29 +50,38 @@ app.post("/upload-video", async (req, res) => {
   try {
     const { videoId, libraryId } = req.query;
 
-    const bunnyRes = await fetch(
-      `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`,
-      {
+    const uploadUrl = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
+
+    const chunks = [];
+
+    req.on("data", (chunk) => {
+      chunks.push(chunk);
+    });
+
+    req.on("end", async () => {
+      const buffer = Buffer.concat(chunks);
+
+      const bunnyRes = await fetch(uploadUrl, {
         method: "PUT",
         headers: {
           AccessKey: BUNNY_API_KEY,
           "Content-Type": "application/octet-stream",
         },
-        body: req,          // 🔥 STREAM
-        duplex: "half",     // 🔥 NODE 18+
+        body: buffer,
+      });
+
+      if (!bunnyRes.ok) {
+        const text = await bunnyRes.text();
+        console.log("BUNNY ERROR:", text);
+        return res.status(500).send("Upload hata");
       }
-    );
 
-    if (!bunnyRes.ok) {
-      const text = await bunnyRes.text();
-      console.log(text);
-      return res.status(500).send("upload hata");
-    }
+      res.send("OK");
+    });
 
-    res.send("OK");
   } catch (err) {
     console.error(err);
-    res.status(500).send("server error");
+    res.status(500).send("Server error");
   }
 });
 
