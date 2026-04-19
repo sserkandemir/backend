@@ -34,11 +34,8 @@ app.post("/create-video", async (req, res) => {
 
     const videoId = response.data.guid;
 
-    const uploadUrl = `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId}`;
-
     res.json({
       videoId,
-      uploadUrl,
       libraryId: process.env.BUNNY_LIBRARY_ID
     });
 
@@ -53,26 +50,55 @@ app.post("/create-video", async (req, res) => {
 });
 
 /**
- * UPLOAD URL AL (opsiyonel)
+ * VIDEO UPLOAD (ASIL KRİTİK)
  */
-app.post("/upload-video", (req, res) => {
-  try {
-    const { videoId } = req.body;
+app.post("/upload-video", async (req, res) => {
+  const { libraryId, videoId } = req.query;
 
-    if (!videoId) {
-      return res.status(400).json({ error: "videoId gerekli" });
+  try {
+    const chunks = [];
+
+    for await (const chunk of req) {
+      chunks.push(chunk);
     }
 
-    const uploadUrl = `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId}`;
+    const buffer = Buffer.concat(chunks);
 
-    res.json({
-      uploadUrl,
-      method: "PUT"
-    });
+    const response = await fetch(
+      `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`,
+      {
+        method: "PUT",
+        headers: {
+          AccessKey: process.env.BUNNY_API_KEY,
+          "Content-Type": "application/octet-stream",
+        },
+        body: buffer,
+      }
+    );
 
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const text = await response.text();
+
+    if (!response.ok) {
+      console.log(text);
+      return res.status(500).send(text);
+    }
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Upload error");
   }
+});
+
+/**
+ * PORT
+ */
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
+});  }
 });
 
 /**
