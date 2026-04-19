@@ -4,6 +4,7 @@ import cors from "cors";
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.raw({ type: "*/*", limit: "500mb" }));
 
 const PORT = process.env.PORT || 3000;
 
@@ -56,7 +57,7 @@ app.post("/upload-video", async (req, res) => {
         AccessKey: BUNNY_API_KEY,
         "Content-Type": "application/octet-stream",
       },
-      body: req,
+      body: req.body, // 🔥 BURASI ÇOK ÖNEMLİ
     });
 
     if (!bunnyRes.ok) {
