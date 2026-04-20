@@ -1,25 +1,24 @@
 import express from "express";
 import cors from "cors";
-//import fetch from "node-fetch";
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+
+// ❗ SADECE create-video JSON parse
+app.use("/create-video", express.json());
 
 const PORT = process.env.PORT || 3000;
 
-// ENV
 const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
 const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
 
-// TEST
 app.get("/", (req, res) => {
   res.send("Backend çalışıyor 🚀");
 });
 
 
-// 🎯 1. VIDEO OLUŞTUR
+// 🎯 CREATE VIDEO
 app.post("/create-video", async (req, res) => {
   try {
     const { title } = req.body;
@@ -51,7 +50,7 @@ app.post("/create-video", async (req, res) => {
 });
 
 
-// 🔥 2. VIDEO UPLOAD (STREAM – EN KRİTİK)
+// 🔥 UPLOAD (STREAM — BOZULMAZ)
 app.post("/upload-video", async (req, res) => {
   try {
     const { videoId, libraryId } = req.query;
@@ -68,7 +67,8 @@ app.post("/upload-video", async (req, res) => {
         AccessKey: BUNNY_API_KEY,
         "Content-Type": "application/octet-stream",
       },
-      body: req, // 🔥 STREAM DIRECT
+      body: req,
+      duplex: "half", // 🔥 EN KRİTİK
     });
 
     if (!bunnyRes.ok) {
@@ -84,8 +84,6 @@ app.post("/upload-video", async (req, res) => {
   }
 });
 
-
-// START
 app.listen(PORT, () => {
   console.log("Server started on port", PORT);
 });
