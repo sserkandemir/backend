@@ -1,34 +1,25 @@
 import express from "express";
 import cors from "cors";
+import fetch from "node-fetch";
 
 const app = express();
 
-// 🔥 CORS
 app.use(cors());
-
-// 🔥 EN KRİTİK: RAW BODY (UPLOAD İÇİN)
-app.use(express.raw({
-  type: "/",
-  limit: "500mb"
-}));
-
-// 🔥 JSON (create-video için)
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
+// ENV
 const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
 const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
 
-// ✅ TEST
+// TEST
 app.get("/", (req, res) => {
   res.send("Backend çalışıyor 🚀");
 });
 
 
-// =============================
-// 🎬 CREATE VIDEO
-// =============================
+// 🎯 1. VIDEO OLUŞTUR
 app.post("/create-video", async (req, res) => {
   try {
     const { title } = req.body;
@@ -41,7 +32,9 @@ app.post("/create-video", async (req, res) => {
           AccessKey: BUNNY_API_KEY,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({
+          title: title || "video",
+        }),
       }
     );
 
@@ -51,27 +44,20 @@ app.post("/create-video", async (req, res) => {
       videoId: data.guid,
       libraryId: LIBRARY_ID,
     });
-
   } catch (err) {
     console.error("CREATE ERROR:", err);
-    res.status(500).json({ error: "create video hata" });
+    res.status(500).send("create error");
   }
 });
 
 
-// =============================
-// 🚀 UPLOAD VIDEO (KRİTİK)
-// =============================
+// 🔥 2. VIDEO UPLOAD (STREAM – EN KRİTİK)
 app.post("/upload-video", async (req, res) => {
   try {
     const { videoId, libraryId } = req.query;
 
-    // 🔥 DEBUG
-    console.log("VIDEO ID:", videoId);
-    console.log("BODY LENGTH:", req.body?.length);
-
-    if (!req.body || req.body.length === 0) {
-      return res.status(400).send("Video boş geldi");
+    if (!videoId || !libraryId) {
+      return res.status(400).send("videoId / libraryId missing");
     }
 
     const uploadUrl = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
@@ -82,27 +68,24 @@ app.post("/upload-video", async (req, res) => {
         AccessKey: BUNNY_API_KEY,
         "Content-Type": "application/octet-stream",
       },
-      body: req.body,
+      body: req, // 🔥 STREAM DIRECT
     });
 
-    // 🔥 Bunny response debug
-    const text = await bunnyRes.text();
-    console.log("BUNNY RESPONSE:", text);
-
     if (!bunnyRes.ok) {
+      const text = await bunnyRes.text();
+      console.error("BUNNY ERROR:", text);
       return res.status(500).send(text);
     }
 
     res.send("OK");
-
   } catch (err) {
     console.error("UPLOAD ERROR:", err);
-    res.status(500).send("Server error");
+    res.status(500).send("upload error");
   }
 });
 
 
-// =============================
+// START
 app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log("Server started on port", PORT);
 });
