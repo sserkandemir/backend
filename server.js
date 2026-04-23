@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch";
 
 const app = express();
 
@@ -9,15 +8,15 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-// TEST ROUTE
+// TEST
 app.get("/", (req, res) => {
   res.send("API çalışıyor");
 });
 
-// VIDEO CREATE
+// CREATE VIDEO
 app.post("/create-video", async (req, res) => {
   try {
-    const response = await fetch("https://video.bunnycdn.com/library/" + process.env.BUNNY_LIBRARY_ID + "/videos", {
+    const response = await fetch(`https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos`, {
       method: "POST",
       headers: {
         "AccessKey": process.env.BUNNY_API_KEY,
@@ -39,11 +38,6 @@ app.post("/create-video", async (req, res) => {
     console.error(err);
     res.status(500).json({ error: "create failed" });
   }
-});
-
-// UPLOAD
-app.post("/upload-video", (req, res) => {
-  res.send("upload endpoint ok");
 });
 
 app.listen(PORT, () => {
