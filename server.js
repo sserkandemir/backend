@@ -4,7 +4,7 @@ import cors from "cors";
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: "100mb" }));
+app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
@@ -12,7 +12,7 @@ app.get("/", (req, res) => {
   res.send("API çalışıyor");
 });
 
-// CREATE VIDEO
+// CREATE VIDEO + RETURN UPLOAD URL
 app.post("/create-video", async (req, res) => {
   try {
     const response = await fetch(
@@ -31,43 +31,20 @@ app.post("/create-video", async (req, res) => {
 
     const data = await response.json();
 
+    const videoId = data.guid;
+
+    // upload URL (en önemli kısım)
+    const uploadUrl = `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId}`;
+
     res.json({
-      videoId: data.guid,
+      videoId,
+      uploadUrl,
+      apiKey: process.env.BUNNY_API_KEY // frontend kullanacak
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "create failed" });
-  }
-});
-
-// UPLOAD VIDEO
-app.post("/upload-video", async (req, res) => {
-  try {
-    const { videoId, fileBase64 } = req.body;
-
-    const buffer = Buffer.from(fileBase64, "base64");
-
-    const response = await fetch(
-      `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId}`,
-      {
-        method: "PUT",
-        headers: {
-          AccessKey: process.env.BUNNY_API_KEY,
-          "Content-Type": "application/octet-stream",
-        },
-        body: buffer,
-      }
-    );
-
-    if (!response.ok) {
-      const text = await response.text();
-      return res.status(500).json({ error: text });
-    }
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "upload failed" });
   }
 });
 
