@@ -8,12 +8,10 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-// TEST
 app.get("/", (req, res) => {
   res.send("API çalışıyor");
 });
 
-// CREATE VIDEO
 app.post("/create-video", async (req, res) => {
   try {
     const response = await fetch(`https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos`, {
