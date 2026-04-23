@@ -1,11 +1,10 @@
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch";
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "100mb" }));
 
 const PORT = process.env.PORT || 3000;
 
@@ -25,7 +24,7 @@ app.post("/create-video", async (req, res) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title: req.body.title || "video",
+          title: "video",
         }),
       }
     );
@@ -41,7 +40,7 @@ app.post("/create-video", async (req, res) => {
   }
 });
 
-// UPLOAD VIDEO (ASIL OLAY BURASI)
+// UPLOAD VIDEO
 app.post("/upload-video", async (req, res) => {
   try {
     const { videoId, fileBase64 } = req.body;
