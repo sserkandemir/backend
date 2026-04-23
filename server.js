@@ -1,18 +1,20 @@
 import express from "express";
 import cors from "cors";
+import fetch from "node-fetch";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
+// TEST
 app.get("/", (req, res) => {
   res.send("API çalışıyor");
 });
 
-// CREATE VIDEO + RETURN UPLOAD URL
+// CREATE VIDEO
 app.post("/create-video", async (req, res) => {
   try {
     const response = await fetch(
@@ -24,7 +26,7 @@ app.post("/create-video", async (req, res) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title: "video",
+          title: req.body.title || "video",
         }),
       }
     );
@@ -33,15 +35,15 @@ app.post("/create-video", async (req, res) => {
 
     const videoId = data.guid;
 
-    // upload URL (en önemli kısım)
     const uploadUrl = `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId}`;
+    const playbackUrl = `https://${process.env.BUNNY_CDN_HOST}/${videoId}/playlist.m3u8`;
 
     res.json({
       videoId,
       uploadUrl,
-      apiKey: process.env.BUNNY_API_KEY // frontend kullanacak
+      playbackUrl,
+      libraryId: process.env.BUNNY_LIBRARY_ID,
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "create failed" });
