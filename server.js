@@ -1,78 +1,91 @@
 import express from "express";
+import fetch from "node-fetch";
 import cors from "cors";
-import axios from "axios";
 
 const app = express();
+
 app.use(cors());
+app.use(express.json({ limit: "10mb" }));
 
 const PORT = process.env.PORT || 3000;
 
+// 🔥 BUNNY ENV
 const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
-const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
+const BUNNY_LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
+const BUNNY_CDN_HOST = process.env.BUNNY_CDN_HOST; 
+// örnek: vz-12345.b-cdn.net
 
-app.get("/", (req, res) => {
-  res.send("Backend çalışıyor 🚀");
-});
-
-
-// CREATE VIDEO
-app.post("/create-video", express.json(), async (req, res) => {
+// -----------------------------
+// 1️⃣ CREATE VIDEO
+// -----------------------------
+app.post("/create-video", async (req, res) => {
   try {
     const { title } = req.body;
 
-    const response = await axios.post(
-      `https://video.bunnycdn.com/library/${LIBRARY_ID}/videos`,
-      { title: title || "video" },
+    const response = await fetch(
+      `https://video.bunnycdn.com/library/${BUNNY_LIBRARY_ID}/videos`,
       {
+        method: "POST",
         headers: {
           AccessKey: BUNNY_API_KEY,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          title: title || "video",
+        }),
       }
     );
 
-    res.json({
-      videoId: response.data.guid,
-      libraryId: LIBRARY_ID,
-    });
+    const data = await response.json();
 
+    return res.json({
+      videoId: data.guid,
+      libraryId: BUNNY_LIBRARY_ID,
+      playUrl: `https://${BUNNY_CDN_HOST}/${data.guid}/playlist.m3u8`,
+    });
   } catch (err) {
-    console.error(err.response?.data || err);
-    res.status(500).send("create error");
+    console.error(err);
+    res.status(500).json({ error: "create-video error" });
   }
 });
 
-
-// 🔥 UPLOAD (EN KRİTİK FIX)
+// -----------------------------
+// 2️⃣ UPLOAD VIDEO
+// -----------------------------
 app.post("/upload-video", async (req, res) => {
   try {
     const { videoId, libraryId } = req.query;
 
-    if (!videoId || !libraryId) {
-      return res.status(400).send("missing params");
-    }
+    const uploadUrl = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
 
-    const url = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
-
-    const response = await axios({
-      method: "put",
-      url,
+    const response = await fetch(uploadUrl, {
+      method: "PUT",
       headers: {
         AccessKey: BUNNY_API_KEY,
         "Content-Type": "application/octet-stream",
       },
-      data: req, // 🔥 stream
-      maxBodyLength: Infinity,
-      maxContentLength: Infinity,
+      body: req,
     });
 
-    res.send("OK");
+    if (!response.ok) {
+      const text = await response.text();
+      return res.status(500).json({ error: text });
+    }
 
+    res.json({ success: true });
   } catch (err) {
-    console.error("UPLOAD ERROR:", err.response?.data || err.message);
-    res.status(500).send(err.response?.data || "upload error");
+    console.error(err);
+    res.status(500).json({ error: "upload-video error" });
   }
 });
 
+// -----------------------------
+// HEALTH CHECK
+// -----------------------------
+app.get("/", (req, res) => {
+  res.send("Backend çalışıyor 🚀");
+});
+
 app.listen(PORT, () => {
-  console.log("Server started:", PORT);
+  console.log("Server running on port " + PORT);
 });
