@@ -11,10 +11,10 @@ const PORT = process.env.PORT || 8080;
 
 // TEST
 app.get("/", (req, res) => {
-  res.send("API çalışıyor");
+  res.send("API çalışıyor 🚀");
 });
 
-// CREATE VIDEO
+// 🎬 VIDEO CREATE + PLAYBACK URL
 app.post("/create-video", async (req, res) => {
   try {
     const response = await fetch(
@@ -33,19 +33,26 @@ app.post("/create-video", async (req, res) => {
 
     const data = await response.json();
 
+    if (!data.guid) {
+      return res.status(500).json({ error: "Video oluşturulamadı" });
+    }
+
     const videoId = data.guid;
 
+    // 🔥 upload link
     const uploadUrl = `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId}`;
-    const playbackUrl = `https://${process.env.BUNNY_CDN_HOST}/${videoId}/playlist.m3u8`;
+
+    // 🔥 izleme linki (EN ÖNEMLİ)
+    const videoUrl = `https://${process.env.BUNNY_CDN_HOST}/${videoId}/playlist.m3u8`;
 
     res.json({
+      success: true,
       videoId,
       uploadUrl,
-      playbackUrl,
-      libraryId: process.env.BUNNY_LIBRARY_ID,
+      videoUrl, // 🔥 frontend bunu kullanacak
     });
   } catch (err) {
-    console.error(err);
+    console.error("CREATE VIDEO ERROR:", err);
     res.status(500).json({ error: "create failed" });
   }
 });
