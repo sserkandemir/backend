@@ -2,8 +2,6 @@ import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
 import multer from "multer";
-import ffmpeg from "fluent-ffmpeg";
-import ffmpegPath from "ffmpeg-static";
 import fs from "fs";
 
 const app = express();
@@ -12,9 +10,6 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 8080;
-
-// FFmpeg path
-ffmpeg.setFfmpegPath(ffmpegPath);
 
 // Upload temp
 const upload = multer({ dest: "uploads/" });
@@ -25,7 +20,7 @@ app.get("/", (req, res) => {
 });
 
 
-// 🎬 NORMAL CREATE (fallback)
+// 🎬 VIDEO CREATE
 app.post("/create-video", async (req, res) => {
   try {
     const response = await fetch(
@@ -62,33 +57,14 @@ app.post("/create-video", async (req, res) => {
 });
 
 
-// 🔥🔥🔥 ANA SİSTEM (INSTAGRAM LEVEL)
+// 🚀 DIRECT UPLOAD (FFMPEG YOK)
 app.post("/upload-compressed", upload.single("video"), async (req, res) => {
   try {
     const inputPath = req.file.path;
-    const outputPath = `uploads/output_${Date.now()}.mp4`;
 
-    console.log("🎬 Video compress başlıyor...");
+    console.log("📤 Direkt upload başlıyor...");
 
-    await new Promise((resolve, reject) => {
-      ffmpeg(inputPath)
-        .videoCodec("libx264")
-        .audioCodec("aac")
-        .size("720x?")
-        .outputOptions([
-          "-preset veryfast",
-          "-crf 28",
-          "-movflags +faststart",
-          "-b:a 128k",
-        ])
-        .on("end", resolve)
-        .on("error", reject)
-        .save(outputPath);
-    });
-
-    console.log("✅ Compress tamamlandı");
-
-    const fileBuffer = fs.readFileSync(outputPath);
+    const fileBuffer = fs.readFileSync(inputPath);
 
     // 1. Bunny create
     const createRes = await fetch(
@@ -106,8 +82,12 @@ app.post("/upload-compressed", upload.single("video"), async (req, res) => {
     const data = await createRes.json();
     const videoId = data.guid;
 
+    if (!videoId) {
+      throw new Error("Bunny video oluşturulamadı");
+    }
+
     // 2. Upload
-    await fetch(
+    const uploadRes = await fetch(
       `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId}`,
       {
         method: "PUT",
@@ -119,19 +99,22 @@ app.post("/upload-compressed", upload.single("video"), async (req, res) => {
       }
     );
 
+    if (!uploadRes.ok) {
+      throw new Error("Bunny upload başarısız");
+    }
+
     console.log("🚀 Bunny upload tamam");
 
     const playbackUrl = `https://${process.env.BUNNY_CDN_HOST}/${videoId}/playlist.m3u8`;
 
-    // temizle
+    // temp dosya sil
     fs.unlinkSync(inputPath);
-    fs.unlinkSync(outputPath);
 
     res.json({ playbackUrl });
 
   } catch (err) {
-    console.error("❌ Compression error:", err);
-    res.status(500).json({ error: "compression failed" });
+    console.error("❌ Upload error:", err);
+    res.status(500).json({ error: "upload failed" });
   }
 });
 
