@@ -57,14 +57,15 @@ app.post("/create-video", async (req, res) => {
 });
 
 
-// 🚀 DIRECT UPLOAD (FFMPEG YOK)
+// 🚀 DIRECT STREAM UPLOAD (PRODUCTION SAFE)
 app.post("/upload-compressed", upload.single("video"), async (req, res) => {
   try {
     const inputPath = req.file.path;
 
-    console.log("📤 Direkt upload başlıyor...");
+    console.log("📤 Stream upload başlıyor...");
 
-    const fileBuffer = fs.readFileSync(inputPath);
+    // 🔥 RAM yerine stream kullan
+    const stream = fs.createReadStream(inputPath);
 
     // 1. Bunny create
     const createRes = await fetch(
@@ -86,7 +87,7 @@ app.post("/upload-compressed", upload.single("video"), async (req, res) => {
       throw new Error("Bunny video oluşturulamadı");
     }
 
-    // 2. Upload
+    // 2. Upload (STREAM)
     const uploadRes = await fetch(
       `https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId}`,
       {
@@ -95,7 +96,7 @@ app.post("/upload-compressed", upload.single("video"), async (req, res) => {
           AccessKey: process.env.BUNNY_API_KEY,
           "Content-Type": "application/octet-stream",
         },
-        body: fileBuffer,
+        body: stream,
       }
     );
 
