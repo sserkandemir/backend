@@ -100,9 +100,11 @@ app.post("/upload-compressed", upload.single("video"), async (req, res) => {
       }
     );
 
-    if (!uploadRes.ok) {
-      throw new Error("Bunny upload başarısız");
-    }
+   if (!uploadRes.ok) {
+  const text = await uploadRes.text();
+  console.log("❌ BUNNY ERROR:", text);
+  return res.status(500).json({ error: text });
+}
 
     console.log("🚀 Bunny upload tamam");
 
